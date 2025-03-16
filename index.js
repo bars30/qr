@@ -20,17 +20,27 @@ async function generateQRCode() {
     // Генерация QR-кода в Buffer
     const qrBuffer = await QRCode.toBuffer(qrURL);
 
-    // Загрузка QR-кода в Cloudinary
+    // Загрузка QR-кода в Cloudinary через stream
     try {
-        const uploadResponse = await cloudinary.uploader.upload(
-            qrBuffer,
-            {
-                folder: "images_preset",
-                public_id: `qr_${newToken}`,
-                overwrite: true,
-                resource_type: "image", // Make sure the resource type is set to "image"
-            }
-        );
+        const uploadResponse = await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+                {
+                    folder: "images_preset",
+                    public_id: `qr_${newToken}`,
+                    overwrite: true,
+                    resource_type: "image",
+                },
+                (error, result) => {
+                    if (error) {
+                        reject(error);
+                    } else {
+                        resolve(result);
+                    }
+                }
+            );
+
+            stream.end(qrBuffer); // Отправляем buffer как stream
+        });
 
         console.log("✅ QR Code uploaded to Cloudinary:", uploadResponse.secure_url);
         return uploadResponse.secure_url;
