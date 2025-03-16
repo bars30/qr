@@ -45,6 +45,8 @@ async function generateQRCode() {
 app.get("/update-qr", async (req, res) => {
     try {
         const qrURL = await generateQRCode();
+        console.log("✅ QR Code generated:", qrURL);
+        
         res.json({ success: true, qrURL });
     } catch (error) {
         res.status(500).json({ error: "000QR generation failed", details: error.message });
