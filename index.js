@@ -71,8 +71,21 @@ app.get("/validate", (req, res) => {
 });
 
 // API для генерации нового QR-кода
+// API для генерации нового QR-кода
 app.get("/update-qr", async (req, res) => {
     try {
+        // Ջնջում ենք բոլոր պատկերները տվյալ պապկայում (images_preset)
+        const { resources } = await cloudinary.search
+            .expression("folder:images_preset")
+            .execute();
+
+        // Ջնջում ենք յուրաքանչյուր ռեսուրս
+        for (const resource of resources) {
+            await cloudinary.uploader.destroy(resource.public_id);
+            console.log(`Deleted: ${resource.public_id}`);
+        }
+
+        // Ստեղծում և բեռնում ենք նոր QR կոդը
         const qrURL = await generateQRCode();
         console.log(qrURL);
         
@@ -81,6 +94,7 @@ app.get("/update-qr", async (req, res) => {
         res.status(500).json({ error: "QR generation failed", details: error.message });
     }
 });
+
 
 // API для получения последнего QR-кода
 app.get("/get-qr", async (req, res) => {
