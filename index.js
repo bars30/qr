@@ -23,7 +23,7 @@ let lastValidToken = null;
 // Генерация QR-кода в памяти// Երբ QR-ը թարմացվում է, պահում ենք նոր token-ը
 async function generateQRCode() {
     lastValidToken = Date.now().toString(); // Նոր վավեր token
-    const qrURL = `http://127.0.0.1:5500/validate?token=${lastValidToken}`;
+    const qrURL = `http://127.0.0.1:5500/qr-video/index.html?token=${lastValidToken}`;
 
     const qrBuffer = await QRCode.toBuffer(qrURL);
     try {
