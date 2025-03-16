@@ -21,35 +21,34 @@ async function generateQRCode() {
     const qrBuffer = await QRCode.toBuffer(qrURL);
 
     // Загрузка QR-кода в Cloudinary
-    const uploadResponse = await cloudinary.uploader.upload_stream(
-        {
-            folder: "images_preset",
-            public_id: `qr_${newToken}`,
-            overwrite: true,
-        },
-        (error, result) => {
-            if (error) {
-                console.error("Error uploading to Cloudinary:", error);
-                throw new Error(error.message);
+    try {
+        const uploadResponse = await cloudinary.uploader.upload(
+            qrBuffer,
+            {
+                folder: "images_preset",
+                public_id: `qr_${newToken}`,
+                overwrite: true,
+                resource_type: "image", // Make sure the resource type is set to "image"
             }
-            console.log("✅ QR Code uploaded to Cloudinary:", result.secure_url);
-            return result.secure_url;
-        }
-    );
+        );
 
-    // Пишем Buffer в Cloudinary
-    uploadResponse.end(qrBuffer);
+        console.log("✅ QR Code uploaded to Cloudinary:", uploadResponse.secure_url);
+        return uploadResponse.secure_url;
+    } catch (error) {
+        console.error("Error uploading to Cloudinary:", error);
+        throw new Error(error.message);
+    }
 }
 
 // API для генерации нового QR-кода
 app.get("/update-qr", async (req, res) => {
     try {
         const qrURL = await generateQRCode();
-        console.log("✅ QR Code generated:", qrURL);
+        console.log(qrURL);
         
         res.json({ success: true, qrURL });
     } catch (error) {
-        res.status(500).json({ error: "000QR generation failed", details: error.message });
+        res.status(500).json({ error: "QR generation failed", details: error.message });
     }
 });
 
@@ -57,7 +56,7 @@ app.get("/update-qr", async (req, res) => {
 app.get("/get-qr", async (req, res) => {
     try {
         const { resources } = await cloudinary.search
-            .expression("folder:qr_codes")
+            .expression("folder:images_preset")
             .sort_by("created_at", "desc")
             .max_results(1)
             .execute();
