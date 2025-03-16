@@ -1,10 +1,14 @@
 const express = require("express");
 const QRCode = require("qrcode");
 const cloudinary = require("cloudinary").v2;
+const cors = require("cors");
 require("dotenv").config();
 
 const app = express();
 const PORT = 3000;
+
+
+app.use(cors());
 
 cloudinary.config({
     cloud_name: "dbcvhhh8s",
