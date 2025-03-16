@@ -1,7 +1,5 @@
 const express = require("express");
 const QRCode = require("qrcode");
-const fs = require("fs");
-const path = require("path");
 const cloudinary = require("cloudinary").v2;
 require("dotenv").config();
 
@@ -14,26 +12,33 @@ cloudinary.config({
     api_secret: "4edffEnZd28HRTsPICWIEO21gvg",
 });
 
+// Генерация QR-кода в памяти
 async function generateQRCode() {
     const newToken = Date.now().toString(); // Генерируем уникальный токен
     const qrURL = `https://qr-nine-pi.vercel.app/validate?token=${newToken}`;
-    const qrFilePath = path.join(__dirname, "qr_code.png");
 
-    // Генерация QR-кода и сохранение в файл
-    await QRCode.toFile(qrFilePath, qrURL);
+    // Генерация QR-кода в Buffer
+    const qrBuffer = await QRCode.toBuffer(qrURL);
 
     // Загрузка QR-кода в Cloudinary
-    const uploadResponse = await cloudinary.uploader.upload(qrFilePath, {
-        folder: "images_preset",
-        public_id: `qr_${newToken}`,
-        overwrite: true,
-    });
+    const uploadResponse = await cloudinary.uploader.upload_stream(
+        {
+            folder: "images_preset",
+            public_id: `qr_${newToken}`,
+            overwrite: true,
+        },
+        (error, result) => {
+            if (error) {
+                console.error("Error uploading to Cloudinary:", error);
+                throw new Error(error.message);
+            }
+            console.log("✅ QR Code uploaded to Cloudinary:", result.secure_url);
+            return result.secure_url;
+        }
+    );
 
-    // Удаляем локальный файл после загрузки
-    fs.unlinkSync(qrFilePath);
-
-    console.log("✅ QR Code uploaded to Cloudinary:", uploadResponse.secure_url);
-    return uploadResponse.secure_url;
+    // Пишем Buffer в Cloudinary
+    uploadResponse.end(qrBuffer);
 }
 
 // API для генерации нового QR-кода
