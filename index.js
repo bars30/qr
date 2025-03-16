@@ -12,21 +12,22 @@ cloudinary.config({
     api_secret: "4edffEnZd28HRTsPICWIEO21gvg",
 });
 
-// Генерация QR-кода в памяти
+// Պահում ենք վերջին վավեր token-ը
+let lastValidToken = null;
+
+
+// Генерация QR-кода в памяти// Երբ QR-ը թարմացվում է, պահում ենք նոր token-ը
 async function generateQRCode() {
-    const newToken = Date.now().toString(); // Генерируем уникальный токен
-    const qrURL = `https://qr-nine-pi.vercel.app/validate?token=${newToken}`;
+    lastValidToken = Date.now().toString(); // Նոր վավեր token
+    const qrURL = `https://qr-nine-pi.vercel.app/validate?token=${lastValidToken}`;
 
-    // Генерация QR-кода в Buffer
     const qrBuffer = await QRCode.toBuffer(qrURL);
-
-    // Загрузка QR-кода в Cloudinary через stream
     try {
         const uploadResponse = await new Promise((resolve, reject) => {
             const stream = cloudinary.uploader.upload_stream(
                 {
                     folder: "images_preset",
-                    public_id: `qr_${newToken}`,
+                    public_id: `qr_${lastValidToken}`,
                     overwrite: true,
                     resource_type: "image",
                 },
@@ -39,16 +40,31 @@ async function generateQRCode() {
                 }
             );
 
-            stream.end(qrBuffer); // Отправляем buffer как stream
+            stream.end(qrBuffer);
         });
 
-        console.log("✅ QR Code uploaded to Cloudinary:", uploadResponse.secure_url);
+        console.log("✅ QR Code uploaded:", uploadResponse.secure_url);
         return uploadResponse.secure_url;
     } catch (error) {
-        console.error("Error uploading to Cloudinary:", error);
+        console.error("Error uploading QR:", error);
         throw new Error(error.message);
     }
 }
+
+// API: Ստուգում ենք QR-ի վավերականությունը
+app.get("/validate", (req, res) => {
+    const { token } = req.query;
+    
+    if (!token) {
+        return res.status(400).json({ error: "Missing token" });
+    }
+
+    if (token === lastValidToken) {
+        res.json({ success: true, message: "QR Code is valid" });
+    } else {
+        res.status(403).json({ error: "Invalid QR Code" });
+    }
+});
 
 // API для генерации нового QR-кода
 app.get("/update-qr", async (req, res) => {
