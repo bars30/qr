@@ -24,7 +24,7 @@ async function generateQRCode() {
 
     // Загрузка QR-кода в Cloudinary
     const uploadResponse = await cloudinary.uploader.upload(qrFilePath, {
-        folder: "qr_codes",
+        folder: "images_preset",
         public_id: `qr_${newToken}`,
         overwrite: true,
     });
@@ -42,7 +42,7 @@ app.get("/update-qr", async (req, res) => {
         const qrURL = await generateQRCode();
         res.json({ success: true, qrURL });
     } catch (error) {
-        res.status(500).json({ error: "QR generation failed", details: error.message });
+        res.status(500).json({ error: "000QR generation failed", details: error.message });
     }
 });
 
